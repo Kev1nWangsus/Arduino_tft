@@ -1,10 +1,3 @@
-# T3TRIS
-A Tetris-clone for Teensy 3 for ILI9341-Display (touch)  with sound
+Source: https://github.com/FrankBoesing/T3TRIS)
 
-![](https://github.com/FrankBoesing/T3TRIS/blob/master/t3tris/extras/board.jpg)
-
-
-Edit your PIN-definitions for display and sound !
-
-For sound, you need to install the "codec" library:
-https://github.com/FrankBoesing/Arduino-Teensy-Codec-lib
+Designed to play tetris with joystick
