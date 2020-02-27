@@ -240,7 +240,12 @@ bool game(bool demoMode) {
         switch (ch) {
           case '+' :  //drop
               // TODO: correct this one to drop at click
-              t = 0;
+              bool movePossible = checkMoveBlock(0, 1, 0);
+              while (movePossible){
+                  drawBlockEx(aBlock, aX, aY + 1, aRotation, aColor, aX, aY, aRotation);
+                  aY++;
+                  movePossible = checkMoveBlock(0, 1, 0);
+              }
               break;
           case 's' :  //down
               t = 0;
@@ -325,8 +330,8 @@ char controls() {
   bool joyBTN = digitalRead(JOY_BTN);
 
   static bool hasClicked = false;
-  // rotate
-  // rotate blocks if isClicked == true && hasClicked == false
+
+  // drop
   bool isClicked = (digitalRead(JOY_BTN) == LOW);
   if (isClicked){
     delay(50);
@@ -336,8 +341,11 @@ char controls() {
   hasClicked = hasClicked && isClicked;
   if (!hasClicked && isClicked){
     hasClicked = true;
-    return ('w');
+    return ('+');
   }
+
+  // rotate
+  if (joyY < 490) return ('w');
   
   // right
   if (joyX > 800) return ('d');
@@ -464,7 +472,7 @@ void drawBlockPix(int px, int py, int col) {
     const int w=4;
 
     tft.fillRect(px+w, py+w, PIX-w*2+1, PIX-w*2+1, color[col]);
-    for (int i = 0; i<w;i++) {
+    for (int i = 0; i<w; i++) {
      tft.drawFastHLine(px + i, py + i, PIX-2*i , color_gamma[0][col]);
      tft.drawFastHLine(px + i, PIX + py - i - 1 , PIX-2*i , color_gamma[1][col]);
      tft.drawFastVLine(px + i, py + i , PIX-2*i , color_gamma[2][col]);
@@ -477,7 +485,7 @@ inline void drawBlockPixSmall(int px, int py, int col) {
     const int w=2;
 
     tft.fillRect(px+w, py+w, PIXSMALL-w*2+1, PIXSMALL-w*2+1, color[col]);
-    for (int i = 0; i<w;i++) {
+    for (int i = 0; i<w; i++) {
      tft.drawFastHLine(px + i, py + i, PIXSMALL-2*i , color_gamma[0][col]);
      tft.drawFastHLine(px + i, PIXSMALL + py - i - 1 , PIXSMALL-2*i , color_gamma[1][col]);
      tft.drawFastVLine(px + i, py + i , PIXSMALL-2*i , color_gamma[2][col]);
