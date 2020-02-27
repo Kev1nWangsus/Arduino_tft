@@ -17,6 +17,9 @@
 #define TFT_SCLK    13
 #define TFT_MISO    12
 #define TOUCH_CS     8
+#define JOY_X       A0
+#define JOY_Y       A1
+#define JOY_BTN      1
 #endif
 
 ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCLK, TFT_MISO);
@@ -67,16 +70,20 @@ void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, 
 void drawField();
 
 void setup() {
-
-#if TETRIS
-  //CS0-CS2 Memoryboard
-  pinMode(2, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  digitalWrite(2, LOW);
-  digitalWrite(3, LOW);
-  digitalWrite(4, LOW);
-#endif
+  
+  
+  #if TETRIS
+    //CS0-CS2 Memoryboard
+    pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
+    digitalWrite(2, LOW);
+    digitalWrite(3, LOW);
+    digitalWrite(4, LOW);
+    pinMode(JOY_BTN, INPUT_PULLUP);
+    pinMode(JOY_X, INPUT);
+    pinMode(JOY_Y, INPUT);
+  #endif
 
   //color[0] is background, no gamma
   for (unsigned i=1; i < NUMCOLORS; i++) {
@@ -229,24 +236,32 @@ bool game(bool demoMode) {
     if (!demoMode) do {  // process controls
       if (millis() - tk > aSpeed/3) {
         char ch = controls();
-        if (ch != '\0======') tk = millis();
+        if (ch != '\0') tk = millis();
         switch (ch) {
-          case 's' : //down
-             t = 0;
-             break;
-          case '+' :  //rotate
-             if (checkMoveBlock(0,0,1)) {
+          case '+' :  //drop
+              // TODO: correct this one to drop at click
+              t = 0;
+              break;
+          case 's' :  //down
+              t = 0;
+              break;
+          case 'w' :  //rotate
+              if (checkMoveBlock(0,0,1)) {
                   int oldaRotation = aRotation;
                   aRotation = (aRotation + 1) & 0x03;
                   drawBlockEx(aBlock, aX, aY, aRotation, aColor, aX, aY, oldaRotation);
               }
               break;
           case 'a' : //left
+              if (checkMoveBlock(-1,0,0)) {
+                  drawBlockEx(aBlock, aX + (-1), aY, aRotation, aColor, aX, aY, aRotation);
+                  aX--;
+              }
+              break;
           case 'd' : //right
-              int dX = (ch=='d') ? 1 : -1;
-              if (checkMoveBlock(dX,0,0)) {
-                  drawBlockEx(aBlock, aX + dX, aY, aRotation, aColor, aX, aY, aRotation);
-                  aX += dX;
+              if (checkMoveBlock(1,0,0)) {
+                  drawBlockEx(aBlock, aX + 1, aY, aRotation, aColor, aX, aY, aRotation);
+                  aX++;
               }
               break;
         }
@@ -255,7 +270,7 @@ bool game(bool demoMode) {
     } while ( millis() - t < aSpeed);   // process controls end
 
     else { //demoMode
-      delay(5);
+      delay(100);
       char ch = controls();
       if (ch != '\0')  return true;
     }
@@ -265,7 +280,6 @@ bool game(bool demoMode) {
     if ( movePossible ){
         drawBlockEx(aBlock, aX, aY + 1, aRotation, aColor, aX, aY, aRotation);
         aY++;
-        score++;
     }
 
     else {
@@ -306,37 +320,33 @@ bool game(bool demoMode) {
 }
 
 char controls() {
-  if (Serial.available()) {
-    return (Serial.read());
+  int joyX = analogRead(JOY_X);
+  int joyY = analogRead(JOY_Y);
+  bool joyBTN = digitalRead(JOY_BTN);
+
+  static bool hasClicked = false;
+  // rotate
+  // rotate blocks if isClicked == true && hasClicked == false
+  bool isClicked = (digitalRead(JOY_BTN) == LOW);
+  if (isClicked){
+    delay(50);
+    isClicked = (digitalRead(JOY_BTN) == LOW);
   }
-  if ( ts.bufferEmpty() ) return ('\0');
+  
+  hasClicked = hasClicked && isClicked;
+  if (!hasClicked && isClicked){
+    hasClicked = true;
+    return ('w');
+  }
+  
+  // right
+  if (joyX > 800) return ('d');
 
-  TS_Point p = ts.getPoint();
+  // left
+  if (joyX < 490) return ('a');
 
-#if 0
-  tft.setFont(DroidSans_10);
-  tft.setTextColor(ILI9341_GREEN);
-  tft.fillRect(0, 0, 40, 40,color[0]);
-  tft.setCursor(3,3);
-  tft.print(p.x);
-  tft.setCursor(3,16);
-  tft.print(p.y);
-  tft.setCursor(3,26);
-  tft.print(p.z);  
-#endif
-
-  if (p.z < 400) return ('\0');
-
-  p.y = TS_MAXY - p.y;
-  p.x = TS_MAXX - p.x;
-  p.x = map(p.x, TS_MINX, TS_MAXX, 0, 3);
-  p.y = map(p.y, TS_MINY, TS_MAXY, 0, 3);
-
-
-  if ((p.y < 1)  && (p.x > 1)) return ('+');
-  if ((p.y < 1)  && (p.x < 1)) return ('d');
-  if ((p.y >= 2) && (p.x < 1)) return ('a');
-  if ((p.y >= 2) && (p.x > 1)) return ('s');
+  // down
+  if (joyY > 800) return ('s');
 
   return ('\0' );
 }
@@ -511,7 +521,7 @@ void drawBlockSmall(bool draw) {
 static uint8_t dbuf[FIELD_WIDTH][FIELD_HEIGHT] ={0};
 void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, int oldy, int oldrotation) {
 
-    int x,y;
+    int x, y;
     int w = BLOCKWIDTH(blocknum, oldrotation);
     int h = BLOCKHEIGHT(blocknum, oldrotation);
 

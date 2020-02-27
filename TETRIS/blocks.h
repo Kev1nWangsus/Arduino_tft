@@ -1,4 +1,3 @@
-
 #define PIX 16
 #define PIXSMALL 10
 #define FIELD_WIDTH 12
