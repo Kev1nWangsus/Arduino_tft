@@ -1,6 +1,7 @@
 #include <SPI.h>
 
 #include <ILI9341_t3.h>
+#include <URTouch.h>
 
 #include "blocks.h"
 #include "font_BlackOpsOne-Regular.h"
@@ -18,17 +19,25 @@
 #define JOY_BTN      1
 #define BTN          2
 
+#define TCLK        16
+#define TCS         17
+#define TDIN        18
+#define TDOUT       19
+#define IRQ         20
+
 
 ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCLK, TFT_MISO);
+URTouch mytouch = URTouch(TCLK, TCS, TDIN, TDOUT, IRQ);
 
-// This is calibration data for the raw touch data to the screen coordinates
 
 #define SCREEN_BG        ILI9341_NAVY
 #define GAME_BG         ILI9341_BLACK
 #define initialTimeInterval       500
 #define minTimeInterval           200
 
-#define TEXTFONT   DroidSans_9
+#define TEXTFONT       DroidSans_9
+#define GAMETITLE      DroidSans_20
+#define TITLE          DroidSans_32
 
 uint16_t color_gamma[3][NUMCOLORS];
 uint8_t  field[FIELD_WIDTH][FIELD_HEIGHT];
@@ -36,6 +45,9 @@ uint16_t timeInterval, score, highscore;
 int8_t   nBlock, nColor, nRotation; //next Block
 int8_t   aBlock, aColor, aX, aY, aRotation; //active Block
 
+bool isHome = true;
+char currentPage = '0';
+unsigned cofs = 1;
 
 void initGame();
 void initField() ;
@@ -59,45 +71,159 @@ void drawBlockSmall(bool draw);
 void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, int oldy, int oldrotation);
 void drawField();
 
-void setup() {
-  pinMode(JOY_BTN, INPUT_PULLUP);
-  pinMode(JOY_X, INPUT);
-  pinMode(JOY_Y, INPUT);
-  pinMode(BTN, INPUT);
+void drawHomeScreen() {
+  // Background
+  tft.fillRect(0, 0, 320, 240, GAME_BG);
+    
+  // TETRIS - PLAY WITH JOYSTICK AND BUTTON
+  tft.setTextColor(ILI9341_WHITE); // Sets green color
+  tft.fillRect(70, 105, 180, 30, ILI9341_NAVY); // Draws filled rounded rectangle
+  tft.setCursor(115, 110);
+  tft.setFont(GAMETITLE); // Sets the font to big
+  tft.print("TETRIS"); // Prints the string
   
-  //color[0] is background, no gamma
-  for (unsigned i=1; i < NUMCOLORS; i++) {
-    color_gamma[0][i] = colgamma(color[i], 30);
-    color_gamma[1][i] = colgamma(color[i], -70);
-    color_gamma[2][i] = colgamma(color[i], -35);
-  }
-  delay(800);
+  // SNAKE - PLAY WITH JOYSTICK
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRect(70, 145, 180, 30, ILI9341_NAVY);
+  tft.setCursor(115, 150);
+  tft.setFont(GAMETITLE);
+  tft.print("SNAKE");
   
-  tft.begin();
-  tft.setRotation(2);
+  // ???
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRect(70, 185, 180, 30, ILI9341_NAVY);
+  tft.setCursor(75, 190);
+  tft.setFont(GAMETITLE);
+  tft.print("???");
 
-  highscore = 0;
-  nextBlock();
-  tft.fillScreen(SCREEN_BG);
-  
-  tft.setCursor(SIDE, 0);
-  tft.setFont(TEXTFONT);
-  tft.setTextColor(ILI9341_GREEN);
-  tft.print("Current");
-  tft.setCursor(SIDE, 10);
-  tft.print("Score:");
-
-  tft.setCursor(SIDE, 40);
-  tft.setFont(TEXTFONT);
-  tft.setTextColor(ILI9341_YELLOW);
-  tft.print("Highest");
-  tft.setCursor(SIDE, 50);
-  tft.print("Score:");
-
-  initGame();
-  printScore();
-  printHighScore();
 }
+
+void setup(){
+  tft.begin();
+  mytouch.InitTouch();
+  tft.setRotation(3);
+  drawHomeScreen();
+}
+
+void loop(){
+  
+  if (isHome){
+    tft.setFont(TITLE);
+    tft.setCursor(80, 20);
+    printColorText("ARCADE", cofs);
+    tft.setCursor(85, 60);
+    printColorText("SYSTEM", cofs);
+    if (++cofs > NUMCOLORS-1) cofs = 1;
+    delay(50);
+  }
+    
+  if(mytouch.dataAvailable()){
+    mytouch.read();
+    int x = mytouch.getX(), y = mytouch.getY();
+    if (x >=70 && x <=250 && y >=105 && y <=215){
+      isHome = false; 
+      if (y >=105 && y <=135){
+        // setup TETRIS GAME
+        currentPage = '1';
+        tft.setRotation(2);
+        pinMode(JOY_BTN, INPUT_PULLUP);
+        pinMode(JOY_X, INPUT);
+        pinMode(JOY_Y, INPUT);
+        pinMode(BTN, INPUT);
+        
+        //color[0] is background, no gamma
+        for (unsigned i=1; i < NUMCOLORS; i++) {
+          color_gamma[0][i] = colgamma(color[i], 30);
+          color_gamma[1][i] = colgamma(color[i], -70);
+          color_gamma[2][i] = colgamma(color[i], -35);
+        }
+        delay(800);
+        
+        highscore = 0;
+        nextBlock();
+        tft.fillScreen(SCREEN_BG);
+        
+        tft.setCursor(SIDE, 0);
+        tft.setFont(TEXTFONT);
+        tft.setTextColor(ILI9341_GREEN);
+        tft.print("Current");
+        tft.setCursor(SIDE, 10);
+        tft.print("Score:");
+      
+        tft.setCursor(SIDE, 40);
+        tft.setFont(TEXTFONT);
+        tft.setTextColor(ILI9341_YELLOW);
+        tft.print("Highest");
+        tft.setCursor(SIDE, 50);
+        tft.print("Score:");
+      
+        initGame();
+        printScore();
+        printHighScore();
+        
+      }
+    }
+  }
+  
+  while (currentPage == '1'){
+    bool r = false;
+    int c = 0;
+    int c1 = 0;
+    
+    while(!r){
+      if (++c==8){
+        c = 0;
+      }
+      if (++c1==50){
+        c1 = 0;
+      }
+      r = game(true);
+    }
+    game(false);
+  }
+      
+}
+
+//void setup() {
+//  pinMode(JOY_BTN, INPUT_PULLUP);
+//  pinMode(JOY_X, INPUT);
+//  pinMode(JOY_Y, INPUT);
+//  pinMode(BTN, INPUT);
+//  
+//  //color[0] is background, no gamma
+//  for (unsigned i=1; i < NUMCOLORS; i++) {
+//    color_gamma[0][i] = colgamma(color[i], 30);
+//    color_gamma[1][i] = colgamma(color[i], -70);
+//    color_gamma[2][i] = colgamma(color[i], -35);
+//  }
+//  delay(800);
+//  
+//  tft.begin();
+//  tft.setRotation(2);
+//
+//  highscore = 0;
+//  nextBlock();
+//  tft.fillScreen(SCREEN_BG);
+//  
+//  tft.setCursor(SIDE, 0);
+//  tft.setFont(TEXTFONT);
+//  tft.setTextColor(ILI9341_GREEN);
+//  tft.print("Current");
+//  tft.setCursor(SIDE, 10);
+//  tft.print("Score:");
+//
+//  tft.setCursor(SIDE, 40);
+//  tft.setFont(TEXTFONT);
+//  tft.setTextColor(ILI9341_YELLOW);
+//  tft.print("Highest");
+//  tft.setCursor(SIDE, 50);
+//  tft.print("Score:");
+//
+//  initGame();
+//  printScore();
+//  printHighScore();
+//}
+//
 
 void initGame(){
   score = 0;
@@ -178,22 +304,22 @@ void countDown(){
   initField();
 }
 
-void loop(void){
-  bool r = false;
-  int c = 0;
-  int c1 = 0;
-  
-  while(!r){
-    if (++c==8){
-      c = 0;
-    }
-    if (++c1==50){
-      c1 = 0;
-    }
-    r = game(true);
-  }
-  game(false);
-}
+//void loop(void){
+//  bool r = false;
+//  int c = 0;
+//  int c1 = 0;
+//  
+//  while(!r){
+//    if (++c==8){
+//      c = 0;
+//    }
+//    if (++c1==50){
+//      c1 = 0;
+//    }
+//    r = game(true);
+//  }
+//  game(false);
+//}
 
 char joystickControls() {
   int joyX = analogRead(JOY_X);

@@ -10,7 +10,8 @@ extern "C" {
 
 extern const ILI9341_t3_font_t DroidSans_9;
 extern const ILI9341_t3_font_t DroidSans_10;
-extern const ILI9341_t3_font_t DroidSans_72;
+extern const ILI9341_t3_font_t DroidSans_20;
+extern const ILI9341_t3_font_t DroidSans_32;
 
 
 #ifdef __cplusplus
