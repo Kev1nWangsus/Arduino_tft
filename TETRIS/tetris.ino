@@ -16,6 +16,7 @@
 #define JOY_X       A0
 #define JOY_Y       A1
 #define JOY_BTN      1
+#define BTN          2
 
 
 ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCLK, TFT_MISO);
@@ -62,6 +63,7 @@ void setup() {
   pinMode(JOY_BTN, INPUT_PULLUP);
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
+  pinMode(BTN, INPUT);
   
   //color[0] is background, no gamma
   for (unsigned i=1; i < NUMCOLORS; i++) {
@@ -196,26 +198,35 @@ void loop(void){
 char joystickControls() {
   int joyX = analogRead(JOY_X);
   int joyY = analogRead(JOY_Y);
-  bool joyButton = digitalRead(JOY_BTN);
-  // static bool hasClicked = false;
-
-  // drop
-  if (!joyButton) return ('+');
-  
-  //  bool isClicked = (digitalRead(JOY_BTN) == LOW);
-  //  if (isClicked){
-  //    delay(50);
-  //    isClicked = (digitalRead(JOY_BTN) == LOW);
-  //  }
-  //  
-  //  hasClicked = hasClicked && isClicked;
-  //  if (!hasClicked && isClicked){
-  //    hasClicked = true;
-  //    return ('+');
-  //  }
+  int joyButton = digitalRead(JOY_BTN);
+  int commonButton = digitalRead(BTN);
+  static bool joyHasClicked = false;
+  static bool hasClicked = false;
 
   // rotate
-  if (joyY < 490) return ('w');
+  bool joyIsClicked = (joyButton == LOW);
+  if (joyIsClicked){
+    delay(50);
+    joyIsClicked = (joyButton == LOW);
+  }
+  joyHasClicked = joyHasClicked && joyIsClicked;
+  if (!joyHasClicked && joyIsClicked){
+    joyHasClicked = true;
+    return ('w');
+  }
+
+  // drop
+  bool isClicked = (commonButton == HIGH);
+  if (isClicked){
+    delay(50);
+    isClicked = (commonButton == HIGH);
+  }
+  hasClicked = hasClicked && isClicked;
+  if (!hasClicked && isClicked){
+    hasClicked = true;
+    return ('+');
+  }
+
   // right
   if (joyX > 800) return ('d');
   // left
@@ -223,7 +234,7 @@ char joystickControls() {
   // down
   if (joyY > 800) return ('s');
 
-  return ('\0' );
+  return ('\0');
 }
 
 bool game(bool demoMode){
