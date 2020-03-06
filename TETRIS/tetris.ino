@@ -8,7 +8,7 @@
 #include "font_BlackOpsOne-Regular.h"
 #include "font_DroidSans.h"
 
-// display ports
+// display pins
 #define TFT_DC       9
 #define TFT_CS      10
 #define TFT_RST    255  // 255 = unused, connect to 3.3V
@@ -16,7 +16,7 @@
 #define TFT_SCLK    13
 #define TFT_MISO    12
 
-// touch screen ports
+// touch screen pins
 #define TCLK        16
 #define TCS         17
 #define TDIN        18
@@ -45,13 +45,11 @@ URTouch mytouch = URTouch(TCLK, TCS, TDIN, TDOUT, IRQ);
 // text font
 #define TEXTFONT       DroidSans_9
 #define GAMETITLE      DroidSans_20
-#define TITLE          DroidSans_32
-
-
+#define TITLE          DroidSans_40
 
 uint16_t color_gamma[3][NUMCOLORS];
 uint8_t  field[FIELD_WIDTH][FIELD_HEIGHT];
-uint16_t timeInterval, score, highscore;
+int timeInterval, score, highscore;
 int8_t   nBlock, nColor, nRotation; //next Block
 int8_t   aBlock, aColor, aX, aY, aRotation; //active Block
 
@@ -59,8 +57,11 @@ bool isHome = true;
 char currentPage = '0';
 unsigned cofs = 1;
 
+// Home page function
+void drawHomeScreen();
+
 // Tetris function
-void tetrisSetup();
+void tetrisSetup(); 
 void initTetris();
 void initTetrisField();
 void gameloop();
@@ -74,7 +75,7 @@ uint16_t colgamma(int16_t color, int16_t gamma);
 void printColorText(const char * txt, unsigned colorOffset);
 void countDown();
 void printGameOver();
-void printNum(unsigned num);
+void formatScore(unsigned num);
 void printScore();
 void printHighScore();
 void drawBlockPix(int px, int py, int col);
@@ -84,76 +85,67 @@ void preview(bool draw);
 void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, int oldy, int oldrotation);
 void drawTetrisField();
 
-// Snake function
-void snakeSetup();
-
-// Home page function
-void drawHomeScreen();
-
-
-
-
 
 void drawHomeScreen() {
   // Background
-  tft.fillRect(0, 0, 320, 240, GAME_BG);
+  tft.fillRect(0, 0, 240, 320, GAME_BG);
     
-  // TETRIS - PLAY WITH JOYSTICK AND BUTTON
+  // START_PAGE
   tft.setTextColor(ILI9341_WHITE); // Sets green color
-  tft.fillRect(70, 105, 180, 30, ILI9341_NAVY); // Draws filled rounded rectangle
-  tft.setCursor(115, 110);
+  tft.fillRect(30, 105, 180, 30, ILI9341_NAVY); // Draws filled rounded rectangle
+  tft.setCursor(80, 110);
   tft.setFont(GAMETITLE); // Sets the font to big
-  tft.print("TETRIS"); // Prints the string
+  tft.print("START"); // Prints the string
   
-  // SNAKE - PLAY WITH JOYSTICK
+  // SETTING_PAGE
   tft.setTextColor(ILI9341_WHITE);
-  tft.fillRect(70, 145, 180, 30, ILI9341_NAVY);
-  tft.setCursor(115, 150);
+  tft.fillRect(30, 145, 180, 30, ILI9341_NAVY);
+  tft.setCursor(60, 150);
   tft.setFont(GAMETITLE);
-  tft.print("SNAKE");
-  
-  // ???
-  tft.setTextColor(ILI9341_WHITE);
-  tft.fillRect(70, 185, 180, 30, ILI9341_NAVY);
-  tft.setCursor(75, 190);
-  tft.setFont(GAMETITLE);
-  tft.print("???");
+  tft.print("SETTINGS");
 
+  // SCORE_PAGE
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRect(30, 185, 180, 30, ILI9341_NAVY);
+  tft.setCursor(40, 190);
+  tft.setFont(GAMETITLE);
+  tft.print("HIGH SCORE");
 }
 
 void setup(){
+  // setup the screen
   tft.begin();
   mytouch.InitTouch();
-  tft.setRotation(3);
+  tft.setRotation(2);
   drawHomeScreen();
 }
 
 void loop(){
-
+  
   // color text
   if (isHome){
     tft.setFont(TITLE);
-    tft.setCursor(80, 20);
-    printColorText("ARCADE", cofs);
-    tft.setCursor(85, 60);
-    printColorText("SYSTEM", cofs);
+    tft.setCursor(35, 40);
+    printColorText("TETRIS", cofs);
     if (++cofs > NUMCOLORS-1) cofs = 1;
     delay(50);
   }
 
-  // change to the game chosen
+  // switch to the page by clicking
   if(mytouch.dataAvailable()){
     mytouch.read();
     int x = mytouch.getX();
     int y = mytouch.getY();
-    if (x >= 70 && x <= 250 && y >= 105 && y <= 215){
+    if (x >= 30 && x <= 210 && y >= 105 && y <= 215){
       isHome = false; 
-      if (y >= 105 && y <= 135) tetrisSetup(); // setup tetris
-      if (y >= 145 && y <= 175) snakeSetup(); // setup snake
+      if (y >= 105 && y <= 135) tetrisSetup(); // tetris game
+      // if (y >= 145 && y <= 175) settings(); // settings
+      // if (y >= 185 && y <= 215) highscore(); // high score
     }
   }
 
-  // game loop
+  // game loop 
+  // enter the game if current page is '1'
   gameloop(currentPage);
       
 }
@@ -218,27 +210,28 @@ void initTetrisField(){
   tft.fillRect(FIELD_X, FIELD_Y, FIELD_WIDTH*PIX, FIELD_HEIGHT*PIX, GAME_BG);
 }
 
-void printNum(unsigned num){
-  if (num<1000) tft.print("0");
-  if (num<100) tft.print("0");
-  if (num<10) tft.print("0");
-  tft.print(num);
+void formatScore(int number){
+  // 
+  if (number < 1000) tft.print("0");
+  if (number < 100)  tft.print("0");
+  if (number < 10)   tft.print("0");
+  tft.print(number);
 }
 
 void printScore(){
   tft.setFont(DroidSans_10);
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(ILI9341_WHITE);
   tft.setCursor(SIDE+5, 20);
   tft.fillRect(SIDE+5, 20, 45, 10, SCREEN_BG);
-  printNum(score);
+  formatScore(score);
 }
 
 void printHighScore(){
   tft.setFont(DroidSans_10);
-  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextColor(ILI9341_WHITE);
   tft.setCursor(SIDE+5, 60);
   tft.fillRect(SIDE+5, 60, 45, 10, SCREEN_BG);
-  printNum(highscore);
+  formatScore(highscore);
 }
 
 void printGameOver(){
@@ -332,7 +325,6 @@ char joystickControls() {
   if (joyX < 490) return ('a');
   // right
   if (joyX > 800) return ('d');
-
   // down
   if (joyY > 900) return ('s'); 
 
@@ -588,7 +580,7 @@ void drawBlock(int blocknum, int px, int py, int rotation, int col){
      }
 }
 
-void preview(bool draw){    
+void preview(bool draw){
     tft.setCursor(FIELD_XW+5,250);
     tft.setFont(DroidSans_9);
     tft.setTextColor(ILI9341_WHITE); 
