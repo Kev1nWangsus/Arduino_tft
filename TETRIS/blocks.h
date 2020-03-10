@@ -14,10 +14,14 @@
 #define BLOCKWIDTH(blocknum, rotation) block[rotation][blocknum][0]
 #define BLOCKHEIGHT(blocknum, rotation) block[rotation][blocknum][1]
 
-const uint16_t color[] = {ILI9341_BLACK, ILI9341_RED, ILI9341_ORANGE, ILI9341_YELLOW, ILI9341_GREEN, ILI9341_BLUE, ILI9341_MAGENTA};
 #define NUMCOLORS 7
-
 #define NUMBLOCKS 7
+
+const uint16_t color[NUMCOLORS] = {ILI9341_BLACK, ILI9341_RED, ILI9341_ORANGE, 
+                          ILI9341_YELLOW, ILI9341_GREEN, ILI9341_BLUE, 
+                          ILI9341_MAGENTA};
+                          
+
 const char block[4][NUMBLOCKS][2+4*4] =
 {4,1,
  1,1,1,1,

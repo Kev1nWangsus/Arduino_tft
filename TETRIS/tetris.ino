@@ -1,5 +1,4 @@
 #include <SPI.h>
-
 #include <ILI9341_t3.h>
 #include <URTouch.h>
 
@@ -38,23 +37,21 @@ URTouch mytouch = URTouch(TCLK, TCS, TDIN, TDOUT, IRQ);
 #define SCREEN_BG        ILI9341_NAVY
 #define GAME_BG         ILI9341_BLACK
 
-// time
-#define initialTimeInterval       600
-#define minTimeInterval           200
-
 // text font
 #define TEXTFONT       DroidSans_9
+#define LEVELFONT      DroidSans_8
 #define GAMETITLE      DroidSans_20
-#define TITLE          DroidSans_40
+#define TITLE          BlackOpsOne_40
 
 uint16_t color_gamma[3][NUMCOLORS];
 uint8_t  field[FIELD_WIDTH][FIELD_HEIGHT];
-int timeInterval, score, highscore;
+uint8_t timeInterval, score, highscore;
+int initialTimeInterval = 600, minTimeInterval = 200;
 int8_t   nBlock, nColor, nRotation; //next Block
 int8_t   aBlock, aColor, aX, aY, aRotation; //active Block
 
 bool isHome = true;
-char currentPage = '0';
+int currentPage = 1;
 unsigned cofs = 1;
 
 // Home page function
@@ -62,17 +59,14 @@ void drawHomeScreen();
 
 // Tetris function
 void tetrisSetup(); 
-void initTetris();
 void initTetrisField();
 void gameloop();
-bool checkMoveBlock(int deltaX, int deltaY, int deltaRotation);
+bool checkMoveBlock(int dX, int dY, int dRotation);
 bool tetrisGame(bool demoMode);
 char joystickControls();
 void setBlock();
 void checkLines();
 void nextBlock();
-uint16_t colgamma(int16_t color, int16_t gamma);
-void printColorText(const char * txt, unsigned colorOffset);
 void countDown();
 void printGameOver();
 void formatScore(unsigned num);
@@ -84,6 +78,11 @@ void drawBlock(int blocknum, int px, int py, int rotation, int col);
 void preview(bool draw);
 void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, int oldy, int oldrotation);
 void drawTetrisField();
+void settings();
+
+// artwork
+uint16_t colgamma(int16_t color, int16_t gamma);
+void printColorText(const char * txt, unsigned colorOffset);
 
 
 void drawHomeScreen() {
@@ -92,67 +91,68 @@ void drawHomeScreen() {
     
   // START_PAGE
   tft.setTextColor(ILI9341_WHITE); // Sets green color
-  tft.fillRect(30, 105, 180, 30, ILI9341_NAVY); // Draws filled rounded rectangle
-  tft.setCursor(80, 110);
+  tft.fillRect(30, 105, 180, 40, ILI9341_NAVY); // Draws filled rounded rectangle
+  tft.setCursor(80, 115);
   tft.setFont(GAMETITLE); // Sets the font to big
   tft.print("START"); // Prints the string
   
   // SETTING_PAGE
   tft.setTextColor(ILI9341_WHITE);
-  tft.fillRect(30, 145, 180, 30, ILI9341_NAVY);
-  tft.setCursor(60, 150);
+  tft.fillRect(30, 155, 180, 40, ILI9341_NAVY);
+  tft.setCursor(60, 165);
   tft.setFont(GAMETITLE);
   tft.print("SETTINGS");
 
-  // SCORE_PAGE
-  tft.setTextColor(ILI9341_WHITE);
-  tft.fillRect(30, 185, 180, 30, ILI9341_NAVY);
-  tft.setCursor(40, 190);
-  tft.setFont(GAMETITLE);
-  tft.print("HIGH SCORE");
+//  // SCORE_PAGE
+//  tft.setTextColor(ILI9341_WHITE);
+//  tft.fillRect(30, 195, 180, 40, ILI9341_NAVY);
+//  tft.setCursor(40, 200);
+//  tft.setFont(GAMETITLE);
+//  tft.print("HIGH SCORE");
 }
 
 void setup(){
   // setup the screen
   tft.begin();
-  mytouch.InitTouch();
+  mytouch.InitTouch(0);
+  mytouch.setPrecision(PREC_EXTREME);
   tft.setRotation(2);
   drawHomeScreen();
 }
 
 void loop(){
-  
+  tft.setRotation(2);
   // color text
   if (isHome){
     tft.setFont(TITLE);
-    tft.setCursor(35, 40);
+    tft.setCursor(13, 40);
     printColorText("TETRIS", cofs);
     if (++cofs > NUMCOLORS-1) cofs = 1;
     delay(50);
   }
 
+  mytouch.InitTouch(0);
   // switch to the page by clicking
   if(mytouch.dataAvailable()){
     mytouch.read();
-    int x = mytouch.getX();
-    int y = mytouch.getY();
+    int x = 240 - mytouch.getX();
+    int y = 320 - mytouch.getY();
+    Serial.println(x);
+    Serial.println(y);
     if (x >= 30 && x <= 210 && y >= 105 && y <= 215){
       isHome = false; 
-      if (y >= 105 && y <= 135) tetrisSetup(); // tetris game
-      // if (y >= 145 && y <= 175) settings(); // settings
+      if (y >= 105 && y <= 145) {
+        tetrisSetup();
+        gameloop();// tetris game
+      } else {
+        settings(); // settings
+      }
       // if (y >= 185 && y <= 215) highscore(); // high score
     }
-  }
-
-  // game loop 
-  // enter the game if current page is '1'
-  gameloop(currentPage);
-      
+  }   
 }
 
 void tetrisSetup(){
-  currentPage = '1';
-  tft.setRotation(2);
   pinMode(JOY_BTN, INPUT_PULLUP);
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
@@ -169,7 +169,6 @@ void tetrisSetup(){
   highscore = 0;
   nextBlock();
   tft.fillScreen(SCREEN_BG);
-  
   tft.setCursor(SIDE, 0);
   tft.setFont(TEXTFONT);
   tft.setTextColor(ILI9341_GREEN);
@@ -184,15 +183,80 @@ void tetrisSetup(){
   tft.setCursor(SIDE, 50);
   tft.print("Score:");
 
-  initTetris();
+  score = 0;
+  timeInterval = initialTimeInterval;
+  initTetrisField();
   printScore();
   printHighScore();
 }
 
-void initTetris(){
-  score = 0;
-  timeInterval = initialTimeInterval;
-  initTetrisField();
+void settings(){
+  tft.fillRect(0, 0, 240, 320, GAME_BG);
+  // START_PAGE
+  tft.setTextColor(ILI9341_WHITE); // Sets green color
+  tft.fillRect(30, 200, 180, 30, ILI9341_NAVY); // Draws filled rounded rectangle
+  tft.setCursor(90, 205);
+  tft.setFont(GAMETITLE); // Sets the font to big
+  tft.print("Easy"); // Prints the string
+  
+  // SETTING_PAGE
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRect(30, 240, 180, 30, ILI9341_NAVY);
+  tft.setCursor(70, 245);
+  tft.setFont(GAMETITLE);
+  tft.print("Medium");
+
+  // SCORE_PAGE
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRect(30, 280, 180, 30, ILI9341_NAVY);
+  tft.setCursor(90, 285);
+  tft.setFont(GAMETITLE);
+  tft.print("Hard");
+
+  while(true){
+    if(mytouch.dataAvailable()){
+      mytouch.read();
+      int x = 240 - mytouch.getX();
+      int y = 320 - mytouch.getY();
+      Serial.println(x);
+      Serial.println(y);
+      if (x >= 30 && x <= 210 && y >= 200 && y <= 310){
+        if (y >= 200 && y <= 230){
+          initialTimeInterval = 600;
+          tetrisSetup();
+          gameloop();
+          break;// easy
+        } else if (y >= 240 && y <= 270){
+          initialTimeInterval = 500;
+          tetrisSetup();
+          gameloop();
+          break;// medium
+        } else if (y >= 280 && y <= 310){
+          initialTimeInterval = 300;
+          tetrisSetup();
+          gameloop();
+          break;// hard
+        }
+      }
+    }
+  }
+}
+
+void printGameLevel(int t){
+  tft.setCursor(SIDE, 90);
+  tft.setFont(TEXTFONT);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.print("Level:");
+  tft.setCursor(SIDE, 102);
+  tft.setFont(LEVELFONT);
+  tft.fillRect(SIDE, 100, 40, 200, ILI9341_NAVY);
+  if (t <= 600 && t > 500){
+    tft.print("Easy");
+  } else if (t <= 500 && t > 300){
+    tft.print("Medium");
+  } else if (t <= 300){
+    tft.print("Hard");
+  }
 }
 
 void printColorText(const char *txt, unsigned colorOffset) {
@@ -269,9 +333,9 @@ void countDown(){
   initTetrisField();
 }
 
-void gameloop(char currentPage){
-  while(currentPage == '1'){
-    bool r = false;
+void gameloop(){
+  while(true){
+    bool r = 0;
     int c = 0;
     int c1 = 0;
     
@@ -335,7 +399,8 @@ bool tetrisGame(bool demoMode){
   bool gameOver = false;
   int tk = 0;
 
-  initTetris();
+  score = 0;
+  initTetrisField();
   if (!demoMode) 
     countDown();
 
@@ -407,8 +472,9 @@ bool tetrisGame(bool demoMode){
       //store location
       setBlock();
       checkLines();
+      printGameLevel(timeInterval);
       //get new block and draw it
-      score += 10;
+      score += 5;
       nextBlock();
       preview(true);
       drawBlock(aBlock, aX, aY, aRotation, aColor);
@@ -450,7 +516,7 @@ void setBlock(){
 }
 
 void checkLines(){
-  int x,y,c,i;
+  int x, y, c, i;
   for (y = 0; y < FIELD_HEIGHT; y++){
     c = 0;
     for (x = 0; x < FIELD_WIDTH; x++){
@@ -477,7 +543,7 @@ void checkLines(){
       for (x = 0; x < FIELD_WIDTH; x++){
           field[x][0]=0;
       }
-      score += 50;
+      score += 30;
       drawTetrisField();
       if (timeInterval > minTimeInterval) 
         timeInterval -= 5;
@@ -486,24 +552,20 @@ void checkLines(){
   }
 }
 
-bool checkMoveBlock(int deltaX, int deltaY, int deltaRotation){
-  int rot = (aRotation + deltaRotation) & 0x03;
+bool checkMoveBlock(int dX, int dY, int dRotation){
+  int rot = (aRotation + dRotation) & 0x03;
   int bH = BLOCKHEIGHT(aBlock, rot);
-  int dY = aY + deltaY;
-
-  if (dY + bH > FIELD_HEIGHT)  //lower border
-      return false;
-
   int bW = BLOCKWIDTH(aBlock, rot);
-  int dX = aX + deltaX;
+  int bX = aX + dX;
+  int bY = aY + dY;
 
-  if (dX < 0 || dX + bW > FIELD_WIDTH){ //left/right border
-      return false;
-  }
-
+  if (bY + bH > FIELD_HEIGHT) return false; // touches ground
+  
+  if (bX < 0 || bX + bW > FIELD_WIDTH) return false; //left/right border
+   
   for (int y = bH - 1; y >= 0; y--){
     for (int x = 0; x < bW; x++){
-      if ((field[x + dX][y + dY] > 0) && (block[rot][aBlock][y * 4 + x + 2] > 0)){
+      if ((field[x + bX][y + bY] > 0) && (block[rot][aBlock][y * 4 + x + 2] > 0)){
         return false;
       }
     }
@@ -567,7 +629,6 @@ inline void drawBlockPixSmall(int px, int py, int col){
     }
 }
 
-
 void drawBlock(int blocknum, int px, int py, int rotation, int col){
     int w = BLOCKWIDTH(blocknum, rotation);
     int h = BLOCKHEIGHT(blocknum, rotation);
@@ -575,7 +636,7 @@ void drawBlock(int blocknum, int px, int py, int rotation, int col){
     for (int x = 0; x < w; x++){
        for (int y = 0; y < h; y++){
          if (block[rotation][blocknum][y*4 + x + 2])
-            drawBlockPix(FIELD_X+px*PIX+x*PIX, FIELD_Y+py*PIX+y*PIX, col);
+            drawBlockPix(FIELD_X + px*PIX + x*PIX, FIELD_Y + py*PIX + y*PIX, col);
          }
      }
 }
@@ -635,23 +696,9 @@ void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, 
 
 void drawTetrisField() {
   // draw the black background for tetris
-  
   for (int y = FIELD_HEIGHT-1; y >= 0; y--){
     for (int x = 0; x < FIELD_WIDTH; x++){
-      drawBlockPix(FIELD_X+x*PIX, FIELD_Y+y*PIX, field[x][y]);
+      drawBlockPix(FIELD_X + x*PIX, FIELD_Y + y*PIX, field[x][y]);
     }
   }
-}
-
-
-
-
-void snakeSetup(){
-  currentPage = '2';
-  tft.setRotation(1);
-  pinMode(JOY_X, INPUT);
-  pinMode(JOY_Y, INPUT);
-
-  tft.fillScreen(GAME_BG);
-  tft.fillRect(140, 110, 40, 10, ILI9341_WHITE); 
 }
