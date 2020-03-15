@@ -7,6 +7,7 @@
 #include "blocks.h"
 #include "font_BlackOpsOne-Regular.h"
 #include "font_DroidSans.h"
+#include "font_DroidSansMono.h"
 
 // display pins
 #define TFT_DC       9
@@ -43,9 +44,9 @@ URTouch mytouch = URTouch(TCLK, TCS, TDIN, TDOUT, IRQ);
 #define minTimeInterval           200
 
 // text font
-#define TEXTFONT       DroidSans_9
-#define GAMETITLE      DroidSans_20
-#define TITLE          DroidSans_40
+#define TEXTFONT       DroidSansMono_9
+#define GAMETITLE      DroidSansMono_20
+#define TITLE          DroidSansMono_40
 
 uint16_t color_gamma[3][NUMCOLORS];
 uint8_t  field[FIELD_WIDTH][FIELD_HEIGHT];
