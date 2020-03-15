@@ -44,9 +44,15 @@ URTouch mytouch = URTouch(TCLK, TCS, TDIN, TDOUT, IRQ);
 #define minTimeInterval           200
 
 // text font
+<<<<<<< HEAD
 #define TEXTFONT       DroidSansMono_9
 #define GAMETITLE      DroidSansMono_20
 #define TITLE          DroidSansMono_40
+=======
+#define TEXTFONT       DroidSans_9
+#define GAMETITLE      DroidSans_20
+#define TITLE          DroidSans_40
+>>>>>>> parent of 6f0f184... working
 
 uint16_t color_gamma[3][NUMCOLORS];
 uint8_t  field[FIELD_WIDTH][FIELD_HEIGHT];
@@ -62,7 +68,11 @@ unsigned cofs = 1;
 void drawHomeScreen();
 
 // Tetris function
+<<<<<<< HEAD
 void tetrisSetup();
+=======
+void tetrisSetup(); 
+>>>>>>> parent of 6f0f184... working
 void initTetris();
 void initTetrisField();
 void gameloop();
@@ -121,8 +131,13 @@ void setup() {
   drawHomeScreen();
 }
 
+<<<<<<< HEAD
 void loop() {
 
+=======
+void loop(){
+  
+>>>>>>> parent of 6f0f184... working
   // color text
   if (isHome) {
     tft.setFont(TITLE);
@@ -137,14 +152,20 @@ void loop() {
     mytouch.read();
     int x = mytouch.getX();
     int y = mytouch.getY();
+<<<<<<< HEAD
     if (x >= 30 && x <= 210 && y >= 105 && y <= 215) {
       isHome = false;
+=======
+    if (x >= 30 && x <= 210 && y >= 105 && y <= 215){
+      isHome = false; 
+>>>>>>> parent of 6f0f184... working
       if (y >= 105 && y <= 135) tetrisSetup(); // tetris game
       // if (y >= 145 && y <= 175) settings(); // settings
       // if (y >= 185 && y <= 215) highscore(); // high score
     }
   }
 
+<<<<<<< HEAD
   // game loop
   // enter the game if current page is '1'
   gameloop(currentPage);
@@ -152,6 +173,15 @@ void loop() {
 }
 
 void tetrisSetup() {
+=======
+  // game loop 
+  // enter the game if current page is '1'
+  gameloop(currentPage);
+      
+}
+
+void tetrisSetup(){
+>>>>>>> parent of 6f0f184... working
   currentPage = '1';
   tft.setRotation(2);
   pinMode(JOY_BTN, INPUT_PULLUP);
@@ -170,7 +200,11 @@ void tetrisSetup() {
   highscore = 0;
   nextBlock();
   tft.fillScreen(SCREEN_BG);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> parent of 6f0f184... working
   tft.setCursor(SIDE, 0);
   tft.setFont(TEXTFONT);
   tft.setTextColor(ILI9341_GREEN);
@@ -190,7 +224,11 @@ void tetrisSetup() {
   printHighScore();
 }
 
+<<<<<<< HEAD
 void initTetris() {
+=======
+void initTetris(){
+>>>>>>> parent of 6f0f184... working
   score = 0;
   timeInterval = initialTimeInterval;
   initTetrisField();
@@ -270,8 +308,13 @@ void countDown() {
   initTetrisField();
 }
 
+<<<<<<< HEAD
 void gameloop(char currentPage) {
   while (currentPage == '1') {
+=======
+void gameloop(char currentPage){
+  while(currentPage == '1'){
+>>>>>>> parent of 6f0f184... working
     bool r = false;
     int c = 0;
     int c1 = 0;
@@ -337,7 +380,11 @@ bool tetrisGame(bool demoMode) {
   int tk = 0;
 
   initTetris();
+<<<<<<< HEAD
   if (!demoMode)
+=======
+  if (!demoMode) 
+>>>>>>> parent of 6f0f184... working
     countDown();
 
   nextBlock();
@@ -450,9 +497,15 @@ void setBlock() {
   }
 }
 
+<<<<<<< HEAD
 void checkLines() {
   int x, y, c, i;
   for (y = 0; y < FIELD_HEIGHT; y++) {
+=======
+void checkLines(){
+  int x,y,c,i;
+  for (y = 0; y < FIELD_HEIGHT; y++){
+>>>>>>> parent of 6f0f184... working
     c = 0;
     for (x = 0; x < FIELD_WIDTH; x++) {
       if (field[x][y] > 0)
@@ -487,17 +540,26 @@ void checkLines() {
   }
 }
 
+<<<<<<< HEAD
 bool checkMoveBlock(int deltaX, int deltaY, int deltaRotation) {
+=======
+bool checkMoveBlock(int deltaX, int deltaY, int deltaRotation){
+>>>>>>> parent of 6f0f184... working
   int rot = (aRotation + deltaRotation) & 0x03;
   int bH = BLOCKHEIGHT(aBlock, rot);
   int dY = aY + deltaY;
 
   if (dY + bH > FIELD_HEIGHT)  //lower border
+<<<<<<< HEAD
     return false;
+=======
+      return false;
+>>>>>>> parent of 6f0f184... working
 
   int bW = BLOCKWIDTH(aBlock, rot);
   int dX = aX + deltaX;
 
+<<<<<<< HEAD
   if (dX < 0 || dX + bW > FIELD_WIDTH) { //left/right border
     return false;
   }
@@ -505,6 +567,15 @@ bool checkMoveBlock(int deltaX, int deltaY, int deltaRotation) {
   for (int y = bH - 1; y >= 0; y--) {
     for (int x = 0; x < bW; x++) {
       if ((field[x + dX][y + dY] > 0) && (block[rot][aBlock][y * 4 + x + 2] > 0)) {
+=======
+  if (dX < 0 || dX + bW > FIELD_WIDTH){ //left/right border
+      return false;
+  }
+
+  for (int y = bH - 1; y >= 0; y--){
+    for (int x = 0; x < bW; x++){
+      if ((field[x + dX][y + dY] > 0) && (block[rot][aBlock][y * 4 + x + 2] > 0)){
+>>>>>>> parent of 6f0f184... working
         return false;
       }
     }
@@ -568,6 +639,7 @@ inline void drawBlockPixSmall(int px, int py, int col) {
   }
 }
 
+<<<<<<< HEAD
 
 void drawBlock(int blocknum, int px, int py, int rotation, int col) {
   int w = BLOCKWIDTH(blocknum, rotation);
@@ -579,6 +651,19 @@ void drawBlock(int blocknum, int px, int py, int rotation, int col) {
         drawBlockPix(FIELD_X + px * PIX + x * PIX, FIELD_Y + py * PIX + y * PIX, col);
     }
   }
+=======
+
+void drawBlock(int blocknum, int px, int py, int rotation, int col){
+    int w = BLOCKWIDTH(blocknum, rotation);
+    int h = BLOCKHEIGHT(blocknum, rotation);
+
+    for (int x = 0; x < w; x++){
+       for (int y = 0; y < h; y++){
+         if (block[rotation][blocknum][y*4 + x + 2])
+            drawBlockPix(FIELD_X+px*PIX+x*PIX, FIELD_Y+py*PIX+y*PIX, col);
+         }
+     }
+>>>>>>> parent of 6f0f184... working
 }
 
 void preview(bool draw) {
@@ -636,10 +721,17 @@ void drawBlockEx(int blocknum, int px, int py, int rotation, int col, int oldx, 
 
 void drawTetrisField() {
   // draw the black background for tetris
+<<<<<<< HEAD
 
   for (int y = FIELD_HEIGHT - 1; y >= 0; y--) {
     for (int x = 0; x < FIELD_WIDTH; x++) {
       drawBlockPix(FIELD_X + x * PIX, FIELD_Y + y * PIX, field[x][y]);
+=======
+  
+  for (int y = FIELD_HEIGHT-1; y >= 0; y--){
+    for (int x = 0; x < FIELD_WIDTH; x++){
+      drawBlockPix(FIELD_X+x*PIX, FIELD_Y+y*PIX, field[x][y]);
+>>>>>>> parent of 6f0f184... working
     }
   }
 }
@@ -647,12 +739,20 @@ void drawTetrisField() {
 
 
 
+<<<<<<< HEAD
 void snakeSetup() {
+=======
+void snakeSetup(){
+>>>>>>> parent of 6f0f184... working
   currentPage = '2';
   tft.setRotation(1);
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
 
   tft.fillScreen(GAME_BG);
+<<<<<<< HEAD
   tft.fillRect(140, 110, 40, 10, ILI9341_WHITE);
+=======
+  tft.fillRect(140, 110, 40, 10, ILI9341_WHITE); 
+>>>>>>> parent of 6f0f184... working
 }
