@@ -291,11 +291,23 @@ void printHighScore(){
   formatScore(highscore);
 }
 
+void printStart(){
+  tft.setFont(DroidSans_14);
+  for(int i = 0; i < 3; i++){
+    tft.fillRect(FIELD_X, 110, FIELD_WIDTH*PIX, 60, GAME_BG);
+    delay(800);
+    tft.setCursor(FIELD_X+24, 120);
+    tft.setTextColor(ILI9341_WHITE);
+    tft.print("Press any button");
+    tft.setCursor(FIELD_X+64, 140);
+    tft.print("to start"); 
+    delay(800);
+  }
+}
 void printGameOver(){
   tft.setFont(BlackOpsOne_40);
   tft.fillRect(FIELD_X, 120, FIELD_WIDTH*PIX, 40, GAME_BG);
   tft.fillRect(FIELD_X, 170, FIELD_WIDTH*PIX, 40, GAME_BG);
-
   int t = millis();
   unsigned cofs = 1;
   do {
@@ -401,7 +413,7 @@ bool tetrisGame(bool demoMode){
   drawBlock(aBlock, aX, aY, aRotation, aColor);
 
   do {
-    Serial.println(timeInterval);
+    // Serial.println(timeInterval);
     int t = millis();
     if (!demoMode) do {  // process control
       if (millis() - tk > 100) {
@@ -444,7 +456,7 @@ bool tetrisGame(bool demoMode){
     } while (millis() - t < timeInterval);  // process joystickControls end
 
     else { 
-      //demoMode
+      // demoMode
       delay(20);
       char ch = joystickControls();
       if (ch != '\0')  return true;
@@ -472,6 +484,7 @@ bool tetrisGame(bool demoMode){
         // game over
         initTetrisField();
         gameOver = true;
+        delay(200);
       }
     }
 
@@ -480,6 +493,10 @@ bool tetrisGame(bool demoMode){
     }
 
   } while(!gameOver);
+
+  if (demoMode && gameOver){
+    printStart();
+  }
 
   if (!demoMode){
     if (score > highscore){

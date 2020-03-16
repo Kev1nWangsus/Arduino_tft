@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+extern const ILI9341_t3_font_t BlackOpsOne_10;
 extern const ILI9341_t3_font_t BlackOpsOne_40;
 extern const ILI9341_t3_font_t BlackOpsOne_72;
 
