@@ -16,7 +16,7 @@ Settings
   + Tetris
     - Source: <https://github.com/FrankBoesing/T3TRIS>
         1. Blocks and game rendering
-        2. Nice-looking UI and color text
+        2. Colored text
     - Update: 
         1. Game screen redesigned;
         2. Rotation bug fixed;
