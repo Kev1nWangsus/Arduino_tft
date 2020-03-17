@@ -2,8 +2,8 @@
 #include <ILI9341_t3.h>
 #include <URTouch.h>
 
-// artwork and font
-#include "blocks.h"
+// blocks and font
+#include "tetris.h"
 #include "font_BlackOpsOne-Regular.h"
 #include "font_DroidSans.h"
 
@@ -51,7 +51,6 @@ int8_t      nBlock, nColor, nRotation; //next Block
 int8_t      aBlock, aColor, aX, aY, aRotation; //active Block
 
 bool isHome = true;
-int currentPage = 1;
 unsigned cofs = 1;
 
 // Home page function
@@ -244,6 +243,7 @@ void settings(){
 }
 
 void printGameLevel(int t){
+  // print current game level according to the dropping rate
   tft.setCursor(SIDE, 90);
   tft.setFont(TEXTFONT);
   tft.setTextColor(ILI9341_WHITE);
@@ -292,6 +292,7 @@ void printHighScore(){
 }
 
 void printStart(){
+  // print hint to skip demo mode
   tft.setFont(DroidSans_14);
   for(int i = 0; i < 3; i++){
     tft.fillRect(FIELD_X, 110, FIELD_WIDTH*PIX, 60, GAME_BG);
@@ -305,6 +306,7 @@ void printStart(){
   }
 }
 void printGameOver(){
+  // print game over when game ends
   tft.setFont(BlackOpsOne_40);
   tft.fillRect(FIELD_X, 120, FIELD_WIDTH*PIX, 40, GAME_BG);
   tft.fillRect(FIELD_X, 170, FIELD_WIDTH*PIX, 40, GAME_BG);
@@ -321,8 +323,8 @@ void printGameOver(){
 }
 
 void countDown(){
+  // count down before the start of the game
   tft.setFont(BlackOpsOne_72);
-  // count down
   for (int i = 3; i > 0; i--) {
     tft.setCursor(FIELD_X + FIELD_WIDTH*PIX / 2 - 36, FIELD_Y+100);
     tft.setTextColor(color[i+2]);
@@ -338,25 +340,20 @@ void countDown(){
 }
 
 void gameloop(){
+  // infinite game loop
   while(true){
     bool r = 0;
-    int c = 0;
-    int c1 = 0;
-
     while(!r){
-      if (++c==8){
-        c = 0;
-      }
-      if (++c1==50){
-        c1 = 0;
-      }
       r = tetrisGame(true);
+      // demo mode
     }
     tetrisGame(false);
+    // game
   }
 }
 
-char joystickControls() {
+char joystickControls(){
+  // capture player's operations
   int joyX = analogRead(JOY_X);
   int joyY = analogRead(JOY_Y);
   int joyButton = digitalRead(JOY_BTN);
@@ -400,6 +397,7 @@ char joystickControls() {
 }
 
 bool tetrisGame(bool demoMode){
+  // game loop 
   bool gameOver = false;
   int tk = 0;
 
@@ -470,7 +468,7 @@ bool tetrisGame(bool demoMode){
     }
 
     else {
-      //block stopped moving down
+      // block stopped moving down
       // store location
       setBlock();
       checkLines();
@@ -499,6 +497,7 @@ bool tetrisGame(bool demoMode){
   }
 
   if (!demoMode){
+    // print score if not in demo mode
     if (score > highscore){
         highscore = score;
         printHighScore();
@@ -510,6 +509,7 @@ bool tetrisGame(bool demoMode){
 }
 
 void setBlock(){
+  // set block to background
   int bH = BLOCKHEIGHT(aBlock, aRotation);
   int bW = BLOCKWIDTH(aBlock, aRotation);
 
@@ -523,6 +523,7 @@ void setBlock(){
 }
 
 void checkLines(){
+  // check if a line is completed or not
   int x, y, c, i;
   for (y = 0; y < FIELD_HEIGHT; y++){
     c = 0;
@@ -559,6 +560,7 @@ void checkLines(){
 }
 
 bool checkMoveBlock(int dX, int dY, int dRotation){
+  // check if a block could keep moving or not
   int rot = (aRotation + dRotation) & 0x03;
   int bH = BLOCKHEIGHT(aBlock, rot);
   int bW = BLOCKWIDTH(aBlock, rot);
@@ -595,7 +597,8 @@ void nextBlock(){
 }
 
 void drawBlockPix(int px, int py, int col){
-
+  // parent method
+  // draw blocks with shade
   if (px >= FIELD_XW) return;
   if (px <  FIELD_X) return;
   if (py >= FIELD_YW) return;
